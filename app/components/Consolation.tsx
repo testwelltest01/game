@@ -15,10 +15,7 @@ export default function Consolation({ userProfile, onClose }: Props) {
     useEffect(() => {
         // 비디오 파일 목록 (public/video 폴더 안에 있어야 함)
         const videoList = [
-            '/video/consolation1.mp4',
-            '/video/consolation2.mp4',
-            '/video/consolation3.mp4',
-            '/video/consolation4.mp4'
+            '/video/consolation1.mp4'
         ];
         // 랜덤 선택
         const randomVideo = videoList[Math.floor(Math.random() * videoList.length)];
