@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-// 🆕 1. UNLOCKABLE_ITEMS 추가 (Shop, Item 제거하지 않고 Item은 타입으로 쓰일 수 있으니 둠 / Shop 컴포넌트는 제거)
+// 🆕 1. UNLOCKABLE_ITEMS 추가 (Item은 타입으로 쓰일 수 있으니 둠)
 import { MonsterKey, Monster, Skill, Item, UserProfile, BattleLog, MONSTERS, GOD_MESSAGES_TEMPLATE, MBTI_TITLES, UNLOCKABLE_ITEMS } from "./data";
 
 import Onboarding from "./components/Onboarding";
@@ -253,6 +253,11 @@ export default function Home() {
                   localStorage.removeItem('kingdom_last_visit');
                   setScreen('ONBOARDING');
                 }}
+                onOpenStats={() => setScreen('STATISTICS')}
+              />}
+              {screen === 'STATISTICS' && <Statistics
+                userProfile={userProfile}
+                onClose={() => setScreen('PROFILE')}
               />}
               {screen === 'BATTLE' && currentTag && <Battle monster={currentTag} onSkillAttack={handleSkillAttack} onRetreat={handleRetreat} playSfx={playSfx} onCancel={() => setScreen('LOBBY')} />}
               {screen === 'VICTORY' && <Victory godMsg={godMsg} selectedSkill={selectedSkill} showLight={showLight} onReset={() => { setScreen('LOBBY'); setShowLight(false); setSelectedSkill(null); }} />}
