@@ -1,25 +1,30 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MonsterKey, Monster, Skill, Item, UserProfile, BattleLog, MONSTERS, GOD_MESSAGES_TEMPLATE, MBTI_TITLES } from "./data";
+// 🆕 1. UNLOCKABLE_ITEMS 추가 (Shop, Item 제거하지 않고 Item은 타입으로 쓰일 수 있으니 둠 / Shop 컴포넌트는 제거)
+import { MonsterKey, Monster, Skill, Item, UserProfile, BattleLog, MONSTERS, GOD_MESSAGES_TEMPLATE, MBTI_TITLES, UNLOCKABLE_ITEMS } from "./data";
 
 import Onboarding from "./components/Onboarding";
 import Lobby from "./components/Lobby";
 import Battle from "./components/Battle";
-import Shop from "./components/Shop";
+// import Shop from "./components/Shop"; // 🗑️ 상점 컴포넌트 제거
 import Victory from "./components/Victory";
 import Profile from "./components/Profile";
 import Splash from "./components/Splash";
 import Consolation from "./components/Consolation";
-import DailyDecree from "./components/DailyDecree"; // 🆕 1. 컴포넌트 추가
+import DailyDecree from "./components/DailyDecree";
+import Statistics from "./components/Statistics";
 
 export default function Home() {
   const [isInitialized, setIsInitialized] = useState(false);
-  // 🆕 2. DAILY_DECREE 화면 추가
-  const [screen, setScreen] = useState<'ONBOARDING' | 'LOBBY' | 'BATTLE' | 'VICTORY' | 'SHOP' | 'PROFILE' | 'CONSOLATION' | 'DAILY_DECREE'>('ONBOARDING');
+  // Shop 화면 상태 제거 (타입 정의에서는 남겨도 상관없지만 사용하지 않음)
+  const [screen, setScreen] = useState<'ONBOARDING' | 'LOBBY' | 'BATTLE' | 'VICTORY' | 'SHOP' | 'PROFILE' | 'CONSOLATION' | 'DAILY_DECREE' | 'STATISTICS'>('ONBOARDING');
 
+  // 🆕 2. 초기 포인트 0으로 설정
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: '', age: '', gender: '', mbti: '', isMarried: '', location: '', hobby: '', food: '', weakTime: '', points: 500, inventory: [], logs: []
+    name: '', age: '', gender: '', mbti: '', isMarried: '', location: '', hobby: '', food: '', weakTime: '',
+    points: 0, // [수정] 500 -> 0
+    inventory: [], logs: []
   });
 
   const [currentTag, setCurrentTag] = useState<Monster | null>(null);
@@ -27,7 +32,6 @@ export default function Home() {
   const [godMsg, setGodMsg] = useState<string>('');
   const [showLight, setShowLight] = useState<boolean>(false);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
-  // [추가 필요] 현재 재생 중인 파일 경로를 추적하기 위한 ref
   const currentSrcRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -35,19 +39,20 @@ export default function Home() {
 
     // 1. 재생해야 할 목표 음악(src) 결정
     let nextSrc = '';
-    if (['LOBBY', 'SHOP', 'PROFILE', 'CONSOLATION', 'ONBOARDING'].includes(screen)) {
+    // SHOP은 이제 없지만 로직상 남겨둬도 무방
+    if (['LOBBY', 'SHOP', 'PROFILE', 'CONSOLATION', 'ONBOARDING', 'STATISTICS'].includes(screen)) {
       nextSrc = '/audio/village.mp3';
     }
     else if (screen === 'BATTLE') nextSrc = '/audio/battle.mp3';
     else if (screen === 'VICTORY') nextSrc = '/audio/victory_choir.mp3';
     else if (screen === 'DAILY_DECREE') nextSrc = '/audio/daily_decree.mp3';
 
-    // 2. [핵심] 현재 재생 중인 노래와 목표 노래가 같다면 아무것도 하지 않음 (유지)
+    // 2. 현재 재생 중인 노래와 목표 노래가 같다면 유지
     if (currentSrcRef.current === nextSrc) {
       return;
     }
 
-    // 3. 노래가 다르다면 기존 음악 정지 및 초기화
+    // 3. 노래가 다르다면 기존 음악 정지
     if (bgmRef.current) {
       bgmRef.current.pause();
       bgmRef.current = null;
@@ -60,19 +65,13 @@ export default function Home() {
       audio.volume = 0.5;
       audio.play().catch((e) => console.log("Audio play failed:", e));
 
-      bgmRef.current = audio;       // 오디오 객체 저장
-      currentSrcRef.current = nextSrc; // 현재 파일 경로 저장
+      bgmRef.current = audio;
+      currentSrcRef.current = nextSrc;
     } else {
-      // nextSrc가 없는 경우(음악 끔) 상태 업데이트
       currentSrcRef.current = null;
     }
-
-    // 주의: 여기에 있던 return () => pause() 코드는 제거했습니다. 
-    // 화면이 바뀔 때마다 음악이 끊기는 것을 방지하기 위함입니다.
-
   }, [screen, isInitialized]);
 
-  // [추가 권장] 컴포넌트가 아예 사라질 때(언마운트)만 음악을 끄는 별도의 Effect
   useEffect(() => {
     return () => {
       if (bgmRef.current) {
@@ -81,6 +80,7 @@ export default function Home() {
       }
     };
   }, []);
+
   useEffect(() => {
     const savedData = localStorage.getItem('kingdom_user_profile');
     if (savedData) {
@@ -91,11 +91,10 @@ export default function Home() {
         gender: parsed.gender ?? '',
         mbti: parsed.mbti ?? '',
         isMarried: parsed.isMarried ?? '',
-        points: parsed.points ?? 500,
+        points: parsed.points ?? 0, // 저장된 포인트 없으면 0
         inventory: parsed.inventory ?? [],
         logs: parsed.logs ?? []
       });
-      // 화면 전환은 handleStartApp 등에서 결정
     } else {
       setScreen('ONBOARDING');
     }
@@ -104,23 +103,21 @@ export default function Home() {
   useEffect(() => {
     if (userProfile.name) localStorage.setItem('kingdom_user_profile', JSON.stringify(userProfile));
   }, [userProfile]);
+
   const playSfx = (type: 'attack' | 'click' | 'buy') => {
-    // 효과음 파일 경로가 type에 따라 다르다면 switch문을 쓸 수 있지만, 
-    // 현재는 attack.mp3 하나만 쓰시는 것 같아 기본으로 둡니다.
     const audio = new Audio('/audio/attack.mp3');
     audio.volume = 0.8;
     audio.play().catch((e) => console.log("SFX play failed:", e));
   };
+
   const checkDailyVisit = () => {
-    const today = new Date().toDateString(); // 예: "Fri Dec 19 2025"
+    const today = new Date().toDateString();
     const lastVisit = localStorage.getItem('kingdom_last_visit');
 
     if (lastVisit !== today) {
-      // 오늘 처음 방문임 -> 칙령 보여주기
       setScreen('DAILY_DECREE');
-      localStorage.setItem('kingdom_last_visit', today); // 방문 기록 저장
+      localStorage.setItem('kingdom_last_visit', today);
     } else {
-      // 이미 방문했음 -> 로비로
       setScreen('LOBBY');
     }
   };
@@ -131,12 +128,11 @@ export default function Home() {
     audio.volume = 0;
     audio.play().then(() => audio.pause());
 
-    // 데이터가 없으면 온보딩, 있으면 날짜 체크해서 칙령 or 로비
     const savedData = localStorage.getItem('kingdom_user_profile');
     if (!savedData) {
       setScreen('ONBOARDING');
     } else {
-      checkDailyVisit(); // 🆕 여기서 분기 처리
+      checkDailyVisit();
     }
   };
 
@@ -158,12 +154,31 @@ export default function Home() {
     setScreen('BATTLE');
   };
 
+  // 🆕 3. 공격 승리 시: 포인트 증가 + 아이템 자동 해금 로직
   const handleSkillAttack = (skill: Skill) => {
     playSfx('attack');
     setSelectedSkill(skill);
     addBattleLog('WIN', skill.name);
+
     const rewardPoints = currentTag ? currentTag.reward : 50;
-    setUserProfile(prev => ({ ...prev, points: prev.points + rewardPoints }));
+
+    setUserProfile(prev => {
+      const newPoints = prev.points + rewardPoints;
+
+      // 해금 로직: 현재 포인트보다 낮거나 같은 unlockScore를 가진 아이템 찾기
+      const unlockedItems = UNLOCKABLE_ITEMS
+        .filter(item => item.unlockScore <= newPoints)
+        .map(item => item.id);
+
+      // 기존 인벤토리와 합치기 (Set으로 중복 제거)
+      const newInventory = Array.from(new Set([...prev.inventory, ...unlockedItems]));
+
+      return {
+        ...prev,
+        points: newPoints,
+        inventory: newInventory
+      };
+    });
 
     setTimeout(() => {
       setScreen('VICTORY');
@@ -177,25 +192,23 @@ export default function Home() {
     }, 500);
   };
 
+  // 🆕 4. 후퇴 시: 포인트 30점 차감 (최소 0점)
   const handleRetreat = () => {
     addBattleLog('RUN');
+    setUserProfile(prev => ({
+      ...prev,
+      points: Math.max(0, prev.points - 30)
+    }));
     setScreen('CONSOLATION');
   };
 
-  const handleBuyItem = (item: Item) => {
-    if (userProfile.points < item.price) return alert("포인트 부족!");
-    if (userProfile.inventory.includes(item.id)) return;
-    if (confirm("구매하시겠습니까?")) {
-      playSfx('buy');
-      setUserProfile(prev => ({ ...prev, points: prev.points - item.price, inventory: [...prev.inventory, item.id] }));
-    }
-  };
+  // 🗑️ handleBuyItem 삭제 (상점 제거됨)
 
   const userTitle = userProfile.mbti ? MBTI_TITLES[userProfile.mbti] : '용감한';
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-0 md:p-8 font-sans overflow-hidden relative">
-      <div className="w-full h-[100dvh] md:h-[850px] md:max-w-[420px] bg-black md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border-[8px] border-slate-900 z-10">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-0 md:p-8 font-sans relative">
+      <div className="w-full h-[100dvh] min-h-[700px] md:h-[850px] md:max-w-[420px] bg-black md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border-[8px] border-slate-900 z-10">
 
         <div className="absolute top-0 w-full h-8 z-50 flex justify-between items-center px-6 pt-2 mix-blend-difference text-white">
           <span className="text-[10px] font-bold">with Intochurch</span>
@@ -205,7 +218,8 @@ export default function Home() {
           <Splash onStart={handleStartApp} />
         ) : (
           <>
-            {screen !== 'ONBOARDING' && screen !== 'CONSOLATION' && screen !== 'DAILY_DECREE' && (
+            {/* 🆕 5. VICTORY 화면에서는 상단바 숨김 추가 */}
+            {screen !== 'ONBOARDING' && screen !== 'CONSOLATION' && screen !== 'DAILY_DECREE' && screen !== 'VICTORY' && (
               <div className="w-full px-6 pt-12 pb-4 flex justify-between items-end bg-white/60 backdrop-blur-xl z-40 border-b border-white/20 sticky top-0">
                 <div>
                   <span className="text-xs text-slate-600 font-bold">Kingdom Guardian</span>
@@ -218,23 +232,44 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="bg-yellow-400/90 px-3 py-1 rounded-full text-yellow-900 font-bold text-sm shadow-sm backdrop-blur-md">
-                  🪙 {userProfile.points.toLocaleString()}
+                  ❤ {userProfile.points.toLocaleString()}
                 </div>
               </div>
             )}
 
             <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 h-full">
-              {screen === 'ONBOARDING' && <Onboarding userProfile={userProfile} onChange={handleInputChange} onSetWeakTime={(t) => setUserProfile(p => ({ ...p, weakTime: t }))} onSave={() => { if (!userProfile.name) return alert("이름을 입력해주세요!"); setScreen('DAILY_DECREE'); /* 서약 직후에도 칙령 보여주기 */ }} />}
+              {screen === 'ONBOARDING' && <Onboarding userProfile={userProfile} onChange={handleInputChange} onSetWeakTime={(t) => setUserProfile(p => ({ ...p, weakTime: t }))} onSave={() => { if (!userProfile.name) return alert("이름을 입력해주세요!"); setScreen('DAILY_DECREE'); }} />}
 
-              {screen === 'LOBBY' && <Lobby userProfile={userProfile} onEncounter={handleEncounter} onOpenShop={() => setScreen('SHOP')} onOpenProfile={() => setScreen('PROFILE')} onReset={() => { localStorage.removeItem('kingdom_user_profile'); localStorage.removeItem('kingdom_last_visit'); setScreen('ONBOARDING'); }} />}
+              {/* Lobby에 onOpenShop 제거 */}
+              {screen === 'LOBBY' && <Lobby userProfile={userProfile} onEncounter={handleEncounter} onOpenProfile={() => setScreen('PROFILE')} />}
 
-              {screen === 'SHOP' && <Shop userPoints={userProfile.points} inventory={userProfile.inventory} onBuy={handleBuyItem} onClose={() => setScreen('LOBBY')} />}              {screen === 'PROFILE' && <Profile userProfile={userProfile} onClose={() => setScreen('LOBBY')} />}
-              {screen === 'BATTLE' && currentTag && <Battle monster={currentTag} onSkillAttack={handleSkillAttack} onRetreat={handleRetreat} playSfx={playSfx} />}
+              {/* 🗑️ Shop 화면 렌더링 삭제 */}
+
+              {screen === 'PROFILE' && <Profile
+                userProfile={userProfile}
+                onClose={() => setScreen('LOBBY')}
+                onReset={() => {
+                  localStorage.removeItem('kingdom_user_profile');
+                  localStorage.removeItem('kingdom_last_visit');
+                  setScreen('ONBOARDING');
+                }}
+              />}
+              {screen === 'BATTLE' && currentTag && <Battle monster={currentTag} onSkillAttack={handleSkillAttack} onRetreat={handleRetreat} playSfx={playSfx} onCancel={() => setScreen('LOBBY')} />}
               {screen === 'VICTORY' && <Victory godMsg={godMsg} selectedSkill={selectedSkill} showLight={showLight} onReset={() => { setScreen('LOBBY'); setShowLight(false); setSelectedSkill(null); }} />}
               {screen === 'CONSOLATION' && <Consolation userProfile={userProfile} onClose={() => setScreen('LOBBY')} />}
 
-              {/* 🆕 4. 칙령 화면 렌더링 */}
               {screen === 'DAILY_DECREE' && <DailyDecree onClose={() => setScreen('LOBBY')} />}
+
+              {screen === 'PROFILE' && <Profile
+                userProfile={userProfile}
+                onClose={() => setScreen('LOBBY')}
+                onReset={() => { /* ...초기화 로직... */ }}
+                onOpenStats={() => setScreen('STATISTICS')}
+              />}
+              {screen === 'STATISTICS' && <Statistics
+                userProfile={userProfile}
+                onClose={() => setScreen('PROFILE')}
+              />}
             </div>
           </>
         )}
