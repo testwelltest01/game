@@ -228,8 +228,7 @@ export default function Home() {
 
               {screen === 'LOBBY' && <Lobby userProfile={userProfile} onEncounter={handleEncounter} onOpenShop={() => setScreen('SHOP')} onOpenProfile={() => setScreen('PROFILE')} onReset={() => { localStorage.removeItem('kingdom_user_profile'); localStorage.removeItem('kingdom_last_visit'); setScreen('ONBOARDING'); }} />}
 
-              {screen === 'SHOP' && <Shop userProfile={userProfile} userPoints={userProfile.points} inventory={userProfile.inventory} onBuy={handleBuyItem} onClose={() => setScreen('LOBBY')} />}
-              {screen === 'PROFILE' && <Profile userProfile={userProfile} onClose={() => setScreen('LOBBY')} />}
+              {screen === 'SHOP' && <Shop userPoints={userProfile.points} inventory={userProfile.inventory} onBuy={handleBuyItem} onClose={() => setScreen('LOBBY')} />}              {screen === 'PROFILE' && <Profile userProfile={userProfile} onClose={() => setScreen('LOBBY')} />}
               {screen === 'BATTLE' && currentTag && <Battle monster={currentTag} onSkillAttack={handleSkillAttack} onRetreat={handleRetreat} playSfx={playSfx} />}
               {screen === 'VICTORY' && <Victory godMsg={godMsg} selectedSkill={selectedSkill} showLight={showLight} onReset={() => { setScreen('LOBBY'); setShowLight(false); setSelectedSkill(null); }} />}
               {screen === 'CONSOLATION' && <Consolation userProfile={userProfile} onClose={() => setScreen('LOBBY')} />}
