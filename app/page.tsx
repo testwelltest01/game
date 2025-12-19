@@ -28,7 +28,7 @@ export default function Home() {
   const [showLight, setShowLight] = useState<boolean>(false);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   // [추가 필요] 현재 재생 중인 파일 경로를 추적하기 위한 ref
-  const currentSrcRef = useRef(null);
+  const currentSrcRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isInitialized) return;
