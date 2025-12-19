@@ -268,7 +268,19 @@ export default function Home() {
               {screen === 'PROFILE' && <Profile
                 userProfile={userProfile}
                 onClose={() => setScreen('LOBBY')}
-                onReset={() => { /* ...초기화 로직... */ }}
+                onReset={() => {// 1. 저장소 데이터 삭제
+                  localStorage.removeItem('kingdom_user_profile');
+                  localStorage.removeItem('kingdom_last_visit');
+
+                  // 2. [핵심] 현재 앱의 상태(State)도 빈 값으로 초기화
+                  setUserProfile({
+                    name: '', age: '', gender: '', mbti: '', isMarried: '', location: '', hobby: '', food: '', weakTime: '',
+                    points: 0, inventory: [], logs: []
+                  });
+
+                  // 3. 온보딩 화면으로 이동
+                  setScreen('ONBOARDING');
+                }}
                 onOpenStats={() => setScreen('STATISTICS')}
               />}
               {screen === 'STATISTICS' && <Statistics
