@@ -27,34 +27,60 @@ export default function Home() {
   const [godMsg, setGodMsg] = useState<string>('');
   const [showLight, setShowLight] = useState<boolean>(false);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+  // [추가 필요] 현재 재생 중인 파일 경로를 추적하기 위한 ref
+  const currentSrcRef = useRef(null);
 
   useEffect(() => {
     if (!isInitialized) return;
-    if (bgmRef.current) { bgmRef.current.pause(); bgmRef.current = null; }
-    let src = '';
-    // DAILY_DECREE도 로비 음악과 동일하게 평화로운 BGM
-    if (screen === 'LOBBY' || screen === 'SHOP' || screen === 'PROFILE' || screen === 'CONSOLATION' || screen === 'DAILY_DECREE') src = '/audio/village.mp3';
-    else if (screen === 'BATTLE') src = '/audio/battle.mp3';
-    else if (screen === 'VICTORY') src = '/audio/victory_choir.mp3';
-    else if (screen === 'ONBOARDING') src = '/audio/village.mp3';
 
-    if (src) {
-      const audio = new Audio(src);
+    // 1. 재생해야 할 목표 음악(src) 결정
+    let nextSrc = '';
+    if (['LOBBY', 'SHOP', 'PROFILE', 'CONSOLATION', 'ONBOARDING'].includes(screen)) {
+      nextSrc = '/audio/village.mp3';
+    }
+    else if (screen === 'BATTLE') nextSrc = '/audio/battle.mp3';
+    else if (screen === 'VICTORY') nextSrc = '/audio/victory_choir.mp3';
+    else if (screen === 'DAILY_DECREE') nextSrc = '/audio/daily_decree.mp3';
+
+    // 2. [핵심] 현재 재생 중인 노래와 목표 노래가 같다면 아무것도 하지 않음 (유지)
+    if (currentSrcRef.current === nextSrc) {
+      return;
+    }
+
+    // 3. 노래가 다르다면 기존 음악 정지 및 초기화
+    if (bgmRef.current) {
+      bgmRef.current.pause();
+      bgmRef.current = null;
+    }
+
+    // 4. 새로운 음악 재생
+    if (nextSrc) {
+      const audio = new Audio(nextSrc);
       audio.loop = true;
       audio.volume = 0.5;
       audio.play().catch((e) => console.log("Audio play failed:", e));
-      bgmRef.current = audio;
+
+      bgmRef.current = audio;       // 오디오 객체 저장
+      currentSrcRef.current = nextSrc; // 현재 파일 경로 저장
+    } else {
+      // nextSrc가 없는 경우(음악 끔) 상태 업데이트
+      currentSrcRef.current = null;
     }
-    return () => { if (bgmRef.current) bgmRef.current.pause(); };
+
+    // 주의: 여기에 있던 return () => pause() 코드는 제거했습니다. 
+    // 화면이 바뀔 때마다 음악이 끊기는 것을 방지하기 위함입니다.
+
   }, [screen, isInitialized]);
 
-  const playSfx = (type: 'attack' | 'click' | 'buy') => {
-    if (!isInitialized) return;
-    const audio = new Audio('/audio/attack.mp3');
-    audio.volume = 0.8;
-    audio.play();
-  };
-
+  // [추가 권장] 컴포넌트가 아예 사라질 때(언마운트)만 음악을 끄는 별도의 Effect
+  useEffect(() => {
+    return () => {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
+    };
+  }, []);
   useEffect(() => {
     const savedData = localStorage.getItem('kingdom_user_profile');
     if (savedData) {
@@ -78,8 +104,13 @@ export default function Home() {
   useEffect(() => {
     if (userProfile.name) localStorage.setItem('kingdom_user_profile', JSON.stringify(userProfile));
   }, [userProfile]);
-
-  // 🆕 3. 오늘 접속했는지 확인하는 함수
+  const playSfx = (type: 'attack' | 'click' | 'buy') => {
+    // 효과음 파일 경로가 type에 따라 다르다면 switch문을 쓸 수 있지만, 
+    // 현재는 attack.mp3 하나만 쓰시는 것 같아 기본으로 둡니다.
+    const audio = new Audio('/audio/attack.mp3');
+    audio.volume = 0.8;
+    audio.play().catch((e) => console.log("SFX play failed:", e));
+  };
   const checkDailyVisit = () => {
     const today = new Date().toDateString(); // 예: "Fri Dec 19 2025"
     const lastVisit = localStorage.getItem('kingdom_last_visit');
@@ -167,7 +198,7 @@ export default function Home() {
       <div className="w-full h-[100dvh] md:h-[850px] md:max-w-[420px] bg-black md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border-[8px] border-slate-900 z-10">
 
         <div className="absolute top-0 w-full h-8 z-50 flex justify-between items-center px-6 pt-2 mix-blend-difference text-white">
-          <span className="text-[10px] font-bold">9:41</span>
+          <span className="text-[10px] font-bold">with Intochurch</span>
         </div>
 
         {!isInitialized ? (

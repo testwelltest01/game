@@ -16,10 +16,7 @@ export default function Victory({ godMsg, selectedSkill, showLight, onReset }: P
 
     useEffect(() => {
         const videoList = [
-            '/video/victory1.mp4',
-            '/video/victory2.mp4',
-            '/video/victory3.mp4',
-            '/video/victory4.mp4'
+            '/video/victory1.mp4'
         ];
         setVideoSrc(videoList[Math.floor(Math.random() * videoList.length)]);
     }, []);
